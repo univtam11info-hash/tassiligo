@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tassili Go - لوحة تحكم الأدمن والقيادة</title>
+    <!-- استدعاء Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- استدعاء FontAwesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 30px 20px;
+            color: #334155;
+        }
+
+        /* نافذة تسجيل الدخول الخاصة بالأدمن */
+        #authOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+        }
+        .login-box {
+            background: #fff; padding: 35px; border-radius: 16px; width: 90%; max-width: 400px;
+            text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            border-top: 4px solid #2ec4b6;
+        }
+        .login-box img {
+            width: 130px; margin-bottom: 20px; mix-blend-mode: multiply;
+        }
+        .login-box h2 {
+            margin-bottom: 20px; font-size: 20px; color: #0f172a;
+        }
+        .login-input {
+            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .login-input:focus { border-color: #2ec4b6; }
+        .btn-login {
+            background: #2ec4b6; color: #fff; width: 100%; padding: 12px; border: none;
+            border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-login:hover { background: #259e92; }
+        .login-error { color: #ef4444; font-size: 12px; margin-top: 10px; display: none; }
+
+        /* محتوى الصفحة الأصلي (يتم إخفاؤه حتى يتم تسجيل الدخول) */
+        #adminMainContent {
+            display: none;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* رأس الصفحة: اللوغو والعنوان في المنتصف بتصميم عائم ونظيف */
+        .admin-header-center {
+            text-align: center;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            border-top: 4px solid #2ec4b6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+        .admin-header-center:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+        .admin-logo-img {
+            width: 170px;
+            height: auto;
+            margin-bottom: 12px;
+            mix-blend-mode: multiply;
+        }
+        .admin-header-title {
+            color: #0f172a;
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-logout {
+            position: absolute; top: 20px; left: 20px; background: #fee2e2; color: #991b1b;
+            border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
+            font-weight: bold; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
+        }
+        .btn-logout:hover { background: #fecaca; }
+
+        /* تنسيق الكروت والأقسام بنمط هادئ وبدون خطوط كثيرة */
+        .card-section {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            overflow-x: auto;
+        }
+        h2 {
+            color: #0f172a;
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2 i {
+            color: #2ec4b6;
+        }
+        .section-desc {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        /* جدول نظيف وبسيط بدون خطوط مزعجة */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
+            min-width: 950px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: right;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        td {
+            border-bottom: 1px solid #f1f5f9;
+        }
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* حقول الإدخال المصغرة داخل الجدول لتعديل الرصيد والتقييم */
+        .edit-input {
+            width: 80px;
+            padding: 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 12px;
+            outline: none;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+        .edit-input:focus {
+            border-color: #2ec4b6;
+        }
+
+        /* الأزرار بتصميم متناسق مع لون الهوية والأيقونات */
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-verify { background: #e0f2fe; color: #0369a1; }
+        .btn-verify:hover { background: #bae6fd; }
+
+        .btn-approve { background: #ccfbf1; color: #0f766e; }
+        .btn-approve:hover { background: #99f6e4; }
+
+        .btn-ban { background: #fee2e2; color: #991b1b; }
+        .btn-ban:hover { background: #fecaca; }
+
+        .btn-save-changes { background: #f1f5f9; color: #334155; }
+        .btn-save-changes:hover { background: #e2e8f0; color: #0f172a; }
+
+        /* نموذج الإشعارات بمدخلات نظيفة */
+        .notif-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+            max-width: 600px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #334155;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: #2ec4b6;
+        }
+        .btn-send-notif {
+            background: #2ec4b6; 
+            color: #fff; 
+            padding: 12px; 
+            border: none;
+            border-radius: 8px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: fit-content;
+        }
+        .btn-send-notif:hover { 
+            background: #259e92; 
+        }
+
+        /* نافذة منبثقة للوثائق */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px);
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: #fff; padding: 25px; border-radius: 12px; max-width: 550px; width: 90%;
+            text-align: center; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .doc-img {
+            width: 100%; max-height: 200px; object-fit: contain; margin-bottom: 15px;
+            border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; padding: 5px;
+        }
+        .close-modal {
+            background: #64748b; color: #fff; border: none; padding: 8px 18px;
+            border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- نافذة تسجيل دخول الأدمن -->
+    <div id="authOverlay">
+        <div class="login-box">
+            <img src="images/logo5.png" alt="Logo">
+            <h2>تسجيل دخول الأدمن</h2>
+            <input type="text" id="adminUser" class="login-input" placeholder="اسم المستخدم">
+            <input type="password" id="adminPass" class="login-input" placeholder="كلمة المرور">
+            <button class="btn-login" onclick="checkAdminLogin()">دخول للوحة التحكم</button>
+            <div id="loginError" class="login-error">اسم المستخدم أو كلمة المرور غير صحيحة!</div>
+        </div>
+    </div>
+
+    <!-- محتوى لوحة التحكم (مخفي حتى يتم تسجيل الدخول) -->
+    <div id="adminMainContent">
+        <div class="admin-container">
+            
+            <!-- رأس الصفحة: اللوغو والعنوان المتفاعل في المنتصف -->
+            <div class="admin-header-center">
+                <button class="btn-logout" onclick="adminLogout()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+                <img src="images/logo5.png" alt="Admin Logo" class="admin-logo-img">
+                <h1 class="admin-header-title">
+                    <i class="fa-solid fa-shield-halved"></i> لوحة تحكم الأدمن والقيادة
+                </h1>
+            </div>
+
+            <!-- القسم الأول: إدارة السائقين والمصادقة والمحفظة -->
+            <div class="card-section">
+                <h2><i class="fa-solid fa-users-gear"></i> إدارة السائقين والمصادقة والأرصدة</h2>
+                <p class="section-desc">مراجعة السائقين، تفقد وثائقهم، وتعديل أرصدة المحافظ والتقييمات بكل مرونة.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم واللقب</th>
+                            <th>رقم الهاتف</th>
+                            <th>تاريخ الميلاد</th>
+                            <th>رصيد المحفظة (دج)</th>
+                            <th>التقييم (من 5)</th>
+                            <th>الحالة</th>
+                            <th>الوثائق</th>
+                            <th>الإجراءات السريعة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="driversTableBody">
+                        <!-- يتم جلب البيانات ديناميكياً -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- القسم الثاني: الإشعارات والتنبيهات العامة -->
+            <div class="card-section">
+                <h2><i class="fa-solid fa-bullhorn"></i> الإشعارات والتنبيهات العامة</h2>
+                <p class="section-desc">إرسال تعاميم وتوجيهات فورية لجميع السائقين في المنصة دفعة واحدة.</p>
+                
+                <div class="notif-form">
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-heading"></i> عنوان الإشعار:</label>
+                        <input type="text" id="notifTitle" placeholder="مثال: تحديث هام في معايير ومداخيل التوصيل">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-message"></i> نص الرسالة:</label>
+                        <textarea id="notifBody" rows="3" placeholder="اكتب تفاصيل التوجيه أو الإعلان هنا..."></textarea>
+                    </div>
+                    <button class="btn-send-notif" onclick="sendBroadcastNotification()">
+                        <i class="fa-solid fa-paper-plane"></i> إرسال الإشعار لجميع السائقين
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- نافذة عرض مستندات السائق -->
+    <div id="docModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color:#0f172a;"><i class="fa-solid fa-folder-open"></i> مستندات السائق الرسمية</h3>
+            <p style="text-align:right; font-size:13px; font-weight:600; margin-bottom:5px;">بطاقة التعريف الوطنية:</p>
+            <img id="modalIdCard" class="doc-img" src="" alt="ID Card">
+            
+            <p style="text-align:right; font-size:13px; font-weight:600; margin-bottom:5px;">رخصة السياقة:</p>
+            <img id="modalLicense" class="doc-img" src="" alt="License">
+
+            <p style="text-align:right; font-size:13px; font-weight:600; margin-bottom:5px;">البطاقة الرمادية (الكارت غريس):</p>
+            <img id="modalGreyCard" class="doc-img" src="" alt="Grey Card">
+
+            <button class="close-modal" onclick="closeDocModal()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        // التحقق من حالة تسجيل الدخول عند فتح الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            const isAuth = sessionStorage.getItem('tassili_admin_logged');
+            if (isAuth === 'true') {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('adminMainContent').style.display = 'block';
+                loadDrivers();
+            }
+        });
+
+        // دالة التحقق من بيانات الدخول
+        function checkAdminLogin() {
+            const user = document.getElementById('adminUser').value.trim();
+            const pass = document.getElementById('adminPass').value.trim();
+            const errBox = document.getElementById('loginError');
+
+            if (user === 'tassiliadmin' && pass === 'adimoadmin') {
+                sessionStorage.setItem('tassili_admin_logged', 'true');
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('adminMainContent').style.display = 'block';
+                loadDrivers();
+            } else {
+                errBox.style.display = 'block';
+            }
+        }
+
+        // تسجيل الخروج
+        function adminLogout() {
+            sessionStorage.removeItem('tassili_admin_logged');
+            location.reload();
+        }
+
+        // إعدادات Firebase
+        const firebaseConfig = {
+          apiKey: "AIzaSyB_wXfOUypNTgR4UsC556XYhsyyhI683w0",
+          authDomain: "tassiligo-e248d.firebaseapp.com",
+          projectId: "tassiligo-e248d",
+          storageBucket: "tassiligo-e248d.firebasestorage.app",
+          messagingSenderId: "43966193922",
+          appId: "1:43966193922:web:667acb5cf50e29768d621b",
+          measurementId: "G-W8JFZ4RJCC"
+        };
+
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // 1. جلب قائمة السائقين وعرضهم في الجدول
+        async function loadDrivers() {
+            const tableBody = document.getElementById('driversTableBody');
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#64748b;"><i class="fa-solid fa-spinner fa-spin"></i> جاري جلب البيانات...</td></tr>';
+
+            try {
+                const snapshot = await db.collection('drivers').get();
+                tableBody.innerHTML = '';
+
+                if (snapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#64748b;">لا يوجد سائقين مسجلين حالياً.</td></tr>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const driverId = doc.id;
+                    const fullName = data.full_name || 'غير متوفر';
+                    const phone = data.phone || data.phone_number || 'غير متوفر';
+                    const dob = data.date_of_birth || 'غير متوفر';
+                    const walletBalance = data.wallet_balance !== undefined ? data.wallet_balance : 0; 
+                    const rating = data.rating !== undefined ? data.rating : 5.0; 
+                    const status = data.account_status || 'قيد المعالجة';
+                    const docs = data.documents || {};
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${fullName}</strong></td>
+                        <td dir="ltr" style="text-align: right;">${phone}</td>
+                        <td>${dob}</td>
+                        <td>
+                            <input type="number" id="balance_${driverId}" class="edit-input" value="${walletBalance}" step="100">
+                        </td>
+                        <td>
+                            <input type="number" id="rating_${driverId}" class="edit-input" value="${rating}" min="1" max="5" step="0.1">
+                        </td>
+                        <td><span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${status === 'مفعل' ? '#ccfbf1; color: #0f766e;' : '#fef9c3; color: #854d0e;'}">${status}</span></td>
+                        <td>
+                            <button class="btn-action btn-verify" onclick="openDocModal('${docs.id_card_url || ''}', '${docs.license_url || ''}', '${docs.greyCard_url || ''}')">
+                                <i class="fa-solid fa-eye"></i> عرض
+                            </button>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <button class="btn-action btn-save-changes" onclick="saveDriverFinancials('${driverId}')" title="حفظ الرصيد والتقييم">
+                                    <i class="fa-solid fa-floppy-disk"></i> حفظ
+                                </button>
+                                <button class="btn-action btn-approve" onclick="updateDriverStatus('${driverId}', 'مفعل', true)">
+                                    <i class="fa-solid fa-check"></i> تفعيل
+                                </button>
+                                <button class="btn-action btn-ban" onclick="updateDriverStatus('${driverId}', 'محظور', false)">
+                                    <i class="fa-solid fa-ban"></i> حظر
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("خطأ في جلب السائقين:", error);
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> حدث خطأ أثناء تحميل البيانات.</td></tr>';
+            }
+        }
+
+        // 2. دالة حفظ التعديلات المالية والتقييم للسائق المحدد
+        async function saveDriverFinancials(driverId) {
+            const newBalance = document.getElementById(`balance_${driverId}`).value;
+            const newRating = document.getElementById(`rating_${driverId}`).value;
+
+            if (newBalance === '' || newRating === '') {
+                alert('الرجاء التأكد من إدخال قيم صحيحة للرصيد والتقييم.');
+                return;
+            }
+
+            try {
+                await db.collection('drivers').doc(driverId).update({
+                    wallet_balance: parseFloat(newBalance),
+                    rating: parseFloat(newRating)
+                });
+                alert('تم تحديث رصيد المحفظة والتقييم بنجاح!');
+                loadDrivers();
+            } catch (error) {
+                console.error("خطأ أثناء التحديث:", error);
+                alert('فشل التحديث: ' + error.message);
+            }
+        }
+
+        // فتح نافذة عرض الوثائق
+        function openDocModal(idUrl, licenseUrl, greyUrl) {
+            document.getElementById('modalIdCard').src = idUrl;
+            document.getElementById('modalLicense').src = licenseUrl;
+            document.getElementById('modalGreyCard').src = greyUrl;
+            document.getElementById('docModal').style.display = 'flex';
+        }
+
+        // إغلاق نافذة الوثائق
+        function closeDocModal() {
+            document.getElementById('docModal').style.display = 'none';
+        }
+
+        // تحديث حالة السائق (تفعيل أو حظر) في الفايربيز
+        async function updateDriverStatus(driverId, newStatus, isApprovedBool) {
+            if (!confirm(`هل أنت متأكد من تغيير حالة السائق إلى (${newStatus})؟`)) return;
+
+            try {
+                await db.collection('drivers').doc(driverId).update({
+                    account_status: newStatus,
+                    is_approved: isApprovedBool 
+                });
+                alert('تم تحديث حالة السائق بنجاح!');
+                loadDrivers(); 
+            } catch (error) {
+                console.error("خطأ أثناء التحديث:", error);
+                alert('فشل التحديث: ' + error.message);
+            }
+        }
+
+        // 3. دالة إرسال الإشعار العام لجميع السائقين
+        async function sendBroadcastNotification() {
+            const title = document.getElementById('notifTitle').value.trim();
+            const body = document.getElementById('notifBody').value.trim();
+
+            if (!title || !body) {
+                alert('الرجاء إدخال عنوان الإشعار ونصه أولاً!');
+                return;
+            }
+
+            if (!confirm('هل أنت متأكد من إرسال هذا الإشعار لجميع السائقين؟')) return;
+
+            try {
+                await db.collection('broadcast_notifications').add({
+                    title: title,
+                    body: body,
+                    created_at: firebase.firestore.FieldValue.serverTimestamp(),
+                    sender: "الإدارة"
+                });
+
+                alert('تم إرسال الإشعار بنجاح لجميع السائقين!');
+                document.getElementById('notifTitle').value = '';
+                document.getElementById('notifBody').value = '';
+
+            } catch (error) {
+                console.error("خطأ أثناء إرسال الإشعار:", error);
+                alert('فشل إرسال الإشعار: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

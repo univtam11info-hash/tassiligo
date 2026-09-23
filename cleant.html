@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <title>TASSILI GO - الزبون</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@700;800&family=Cairo:wght@700;800;900&family=IBM+Plex+Sans+Arabic:wght@600;700&family=Readex+Pro:wght@600;700&family=Tajawal:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+    <div class="front1">
+        <div class="front">
+            <div class="logo">
+                <img src="images/care.png" alt="Tassili Go">
+            </div>
+            <h1>تسجيل زبون جديد</h1>
+            <p>أدخل رقم هاتفك لطلب رحلتك الأولى</p>
+        </div>
+
+        <div class="buttons-container">
+            <div style="width: 100%;">
+                <input type="tel" id="phone-number" placeholder="رقم الهاتف (06XXXXXXXX أو 05XXXXXXXX)"
+                    style="width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 14px; text-align: center; font-size: 16px; margin-bottom: 12px; outline: none;">
+                <button type="button" id="send-otp-btn" onclick="sendOtp('client')"
+                    style="width: 100%; padding: 14px; background: #10b981; color: white; border: none; border-radius: 14px; font-weight: bold; cursor: pointer; font-size: 16px;">إرسال رمز التحقق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- حاوية ReCAPTCHA الخفية لـ Firebase -->
+    <div id="recaptcha-container"></div>
+
+    <!-- نافذة الـ OTP المنبثقة الموحدة -->
+    <div id="otp-modal" class="otp-modal-overlay">
+        <form class="form" onsubmit="event.preventDefault(); verifyOtp();">
+            <p class="heading">تأكيد رمز OTP</p>
+            
+            <svg class="check" version="1.1" xmlns="http://www.w3.org/2000/svg" width="60px" height="60px" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="28" fill="#10b981" />
+                <path d="M20 30 L27 37 L40 22" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <div class="box" dir="ltr">
+                <input class="input otp-field" type="text" maxlength="1" autofocus>
+                <input class="input otp-field" type="text" maxlength="1"> 
+                <input class="input otp-field" type="text" maxlength="1">
+                <input class="input otp-field" type="text" maxlength="1">
+                <input class="input otp-field" type="text" maxlength="1">
+                <input class="input otp-field" type="text" maxlength="1">
+            </div>
+
+            <button type="submit" class="btn1">تأكيد</button>
+            <button type="button" class="btn2" onclick="closeOtpModal()">إلغاء</button>
+        </form>
+    </div>
+
+    <!-- استدعاء ملف الجافاسكريبت الرئيسي بنظام الـ Module الحديث -->
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>

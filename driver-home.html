@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tassili Go - لوحة تحكم السائق</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #1f2937; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* تعديل اللوغو: إزالة الخلفية البيضاء، تكبير الحجم، وجعله متناسقاً */
+        .floating-logo-container { text-align: center; margin-bottom: 20px; }
+        .floating-logo-container img { 
+            width: 180px; 
+            max-width: 100%;
+            mix-blend-mode: multiply; /* هذه الخاصية تخفي الخلفية البيضاء تماماً وتدمج اللوغو مع الخلفية */
+            background: transparent;
+        }
+
+        .driver-info-banner { width: 100%; max-width: 600px; background: #fff; padding: 15px 20px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        #map { width: 100%; max-width: 600px; height: 350px; border-radius: 14px; border: 1px solid #cbd5e1; margin-bottom: 15px; }
+        .controls-area { width: 100%; max-width: 600px; }
+        .btn-toggle { width: 100%; background: #ef4444; color: white; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-toggle.online { background: #10b981; }
+
+        /* منطقة حاوية لعدة طلبات */
+        .orders-container { width: 100%; max-width: 600px; margin-top: 15px; display: flex; flex-direction: column; gap: 12px; }
+        .incoming-order-card { background: #fffbeb; border: 2px solid #f59e0b; border-radius: 14px; padding: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    </style>
+</head>
+<body>
+
+    <div class="floating-logo-container">
+        <img src="images/logo2.png" alt="Logo" onerror="this.src='images/cleant.png'">
+    </div>
+
+    <div class="driver-info-banner">
+        <div>
+            <h3 id="driver-name" style="margin:0 0 4px 0; font-size:16px;">جاري التحميل...</h3>
+            <p id="driver-phone" style="margin:0; color:#64748b; font-size:12px;">---</p>
+        </div>
+        <div>
+            <span style="font-size:11px; color:#64748b; display:block;">المحفظة: <strong style="color:#10b981;"><span id="driver-wallet">0</span> دج</strong></span>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="controls-area">
+        <button id="status-btn" class="btn-toggle" onclick="toggleDriverStatus()">
+            <i class="fa-solid fa-power-off"></i> متوقف (لا يستقبل طلبات)
+        </button>
+
+        <!-- حاوية ستعرض جميع الطلبات المتاحة ليستطيع السائق الاختيار منها -->
+        <div id="ordersContainer" class="orders-container"></div>
+    </div>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script type="module" src="driver-home.js"></script>
+</body>
+</html>

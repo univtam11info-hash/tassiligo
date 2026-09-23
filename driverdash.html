@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tassili Go - توثيق حساب السائق</title>
+    <!-- استدعاء Firebase SDKs (الإصدار المتوافق مع الكود الخاص بك) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- استدعاء FontAwesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px 0;
+            color: #333;
+        }
+
+        /* نافذة الشروط والأحكام الإجبارية */
+        .terms-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 27, 42, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .terms-box {
+            background: #fff;
+            width: 90%; max-width: 600px; max-height: 85vh;
+            border-radius: 12px;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .terms-header {
+            background: #0d1b2a; color: #fff; padding: 20px; text-align: center;
+        }
+        .terms-body {
+            padding: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: #4b5563;
+        }
+        .terms-footer {
+            padding: 20px; background: #f1f5f9; border-top: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .terms-footer label {
+            display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; color: #1e293b;
+        }
+        .accept-terms-btn {
+            background: #cbd5e1; color: #64748b; border: none; padding: 12px;
+            border-radius: 8px; font-weight: bold; cursor: not-allowed; transition: 0.3s;
+        }
+        .accept-terms-btn.active {
+            background: #2ec4b6; color: #fff; cursor: pointer;
+        }
+        .accept-terms-btn.active:hover {
+            background: #259e92;
+        }
+
+        /* تصميم المحتوى الرئيسي للداشبورد */
+        .dashboard-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(13, 27, 42, 0.08);
+            border-top: 5px solid #2ec4b6;
+        }
+
+        .dashboard-logo {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .dashboard-logo img {
+            width: 220px;
+            height: auto;
+            mix-blend-mode: multiply;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .dashboard-header h1 {
+            color: #0d1b2a;
+            margin-bottom: 12px;
+            font-size: 26px;
+        }
+        .dashboard-header p {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.8;
+            text-align: justify;
+            background: #f8fafc;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-right: 4px solid #2ec4b6;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="tel"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+        .form-group input[readonly] {
+            background-color: #e2e8f0;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .submit-btn {
+            background: #2ec4b6;
+            color: #fff;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        .submit-btn:hover {
+            background: #259e92;
+        }
+        .submit-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* حاوية رسالة حالة الحساب */
+        #statusMessageContainer {
+            text-align: center;
+            padding: 30px 15px;
+            display: none;
+        }
+        .status-badge {
+            padding: 18px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .status-pending {
+            background: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fde047;
+        }
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .status-desc {
+            color: #4b5563;
+            font-size: 14.5px;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            background: #f8fafc;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .refresh-status-btn {
+            background: #0d1b2a;
+            color: #fff;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .refresh-status-btn:hover {
+            background: #1b263b;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- نافذة الشروط والأحكام -->
+    <div id="termsModal" class="terms-overlay" style="display: none;">
+        <div class="terms-box">
+            <div class="terms-header">
+                <h2>شروط وأحكام الشراكة - Tassili Go</h2>
+            </div>
+            <div class="terms-body">
+                <p><strong>مرحباً بك كشريك سائق في منصة Tassili Go. يرجى قراءة الشروط التالية بعناية:</strong></p>
+                <ul>
+                    <li><strong>صحة الوثائق والمستندات:</strong> يتعهد السائق بأن جميع الوثائق المرفوعة حقيقية وتخصه شخصياً، وأي تزوير يتبعه حظر فوري ومساءلة قانونية.</li>
+                    <li><strong>المسؤولية الميدانية:</strong> المنصة وسيط تقني لتسهيل النقل، والسائق مسؤول مسؤولية كاملة عن سلامة الركاب واحترام قوانين المرور.</li>
+                    <li><strong>سياسة عدم التسامح:</strong> أي بلاغ يتعلق بسوء السلوك يؤدي للتعطيل الفوري للحساب.</li>
+                    <li><strong>حماية البيانات:</strong> يوافق السائق على تخزين بياناته ومستنداته الرسمية لأغراض التحقق والمصادقة الإدارية.</li>
+                </ul>
+            </div>
+            <div class="terms-footer">
+                <label>
+                    <input type="checkbox" id="agreeCheckbox" onchange="toggleTermsBtn()">
+                    أقر بأنني قرأت وفهمت جميع الشروط والأحكام وأوافق عليها التزاماً كاملاً.
+                </label>
+                <button id="agreeBtn" class="accept-terms-btn" disabled onclick="acceptTerms()">موافقة ومتابعة لتوثيق الحساب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- لوحة تحكم السائق -->
+    <div class="dashboard-container">
+        
+        <div class="dashboard-logo">
+            <img src="images/logo4.png" alt="Tassili Go Logo">
+        </div>
+
+        <div class="dashboard-header">
+            <h1>توثيق حساب السائق</h1>
+            <p>
+                لكي نضمن أمان وسلامة رحلات المنصة، يرجى إدخال معلوماتك الشخصية بدقة ورفع الوثائق المطلوبة أدناه ليتم تفعيل حسابك وانضمامك لشبكة شركائنا المعتمدين.
+            </p>
+        </div>
+
+        <!-- نموذج رفع الوثائق -->
+        <div id="formWrapper">
+            <form id="driverVerificationForm" onsubmit="submitDriverData(event)">
+                
+                <div class="form-group">
+                    <label>رقم الهاتف (مؤكد عبر OTP):</label>
+                    <input type="tel" id="verifiedPhone" readonly placeholder="جاري جلب رقم الهاتف...">
+                </div>
+
+                <div class="form-group">
+                    <label>الاسم واللقب:</label>
+                    <input type="text" id="driverFullName" required placeholder="أدخل اسمك الكامل هنا">
+                </div>
+
+                <div class="form-group">
+                    <label>تاريخ الميلاد:</label>
+                    <input type="date" id="driverDob" required>
+                </div>
+
+                <div class="form-group">
+                    <label>صورة بطاقة التعريف الوطنية (ID Card):</label>
+                    <input type="file" id="idCardFile" accept="image/*" required>
+                </div>
+
+                <div class="form-group">
+                    <label>صورة رخصة السياقة (Driving License):</label>
+                    <input type="file" id="licenseFile" accept="image/*" required>
+                </div>
+
+                <div class="form-group">
+                    <label>صورة البطاقة الرمادية للسيارة (Grey Card):</label>
+                    <input type="file" id="greyCardFile" accept="image/*" required>
+                </div>
+
+                <button type="submit" id="submitDocBtn" class="submit-btn">إرسال للمصادقة وتوثيق الحساب</button>
+            </form>
+        </div>
+
+        <!-- رسالة الانتظار والمراجعة -->
+        <div id="statusMessageContainer">
+            <div id="statusBadge" class="status-badge status-pending">
+                <i id="statusIcon" class="fa-solid fa-hourglass-half"></i>
+                <span id="statusBadgeText">حسابك قيد المراجعة من طرف الإدارة</span>
+            </div>
+            <div class="status-desc" id="statusDescription">
+                لقد قمت بإرسال وثائقك ومعلوماتك بنجاح. فريق إدارة <strong>Tassili Go</strong> يقوم حالياً بمراجعة طلبك والتحقق من المستندات. سيتم تفعيل حسابك فوراً بمجرد إتمام المصادقة.
+            </div>
+            <button onclick="checkAccountStatus()" class="refresh-status-btn">
+                <i class="fa-solid fa-rotate-right"></i> التحقق من تحديثات حالة الحساب
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyB_wXfOUypNTgR4UsC556XYhsyyhI683w0",
+          authDomain: "tassiligo-e248d.firebaseapp.com",
+          projectId: "tassiligo-e248d",
+          storageBucket: "tassiligo-e248d.firebasestorage.app",
+          messagingSenderId: "43966193922",
+          appId: "1:43966193922:web:667acb5cf50e29768d621b",
+          measurementId: "G-W8JFZ4RJCC"
+        };
+
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let driverPhone = "";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            driverPhone = localStorage.getItem('userPhone');
+            
+            if (!driverPhone) {
+                alert('عذراً، لم يتم العثور على رقم هاتف مسجل. يرجى إتمام عملية التحقق عبر الـ OTP أولاً.');
+                window.location.href = 'driver.html'; 
+                return;
+            }
+            
+            document.getElementById('verifiedPhone').value = driverPhone;
+
+            const isTermsAccepted = localStorage.getItem('tassili_go_driver_terms');
+            if (isTermsAccepted !== 'true') {
+                document.getElementById('termsModal').style.display = 'flex';
+            }
+
+            auth.signInAnonymously().then(() => {
+                checkAccountStatus();
+            }).catch((error) => {
+                console.warn("تنبيه الاتصال:", error.message);
+                checkAccountStatus();
+            });
+        });
+
+        function toggleTermsBtn() {
+            const checkbox = document.getElementById('agreeCheckbox');
+            const btn = document.getElementById('agreeBtn');
+            if (checkbox.checked) {
+                btn.classList.add('active');
+                btn.removeAttribute('disabled');
+            } else {
+                btn.classList.remove('active');
+                btn.setAttribute('disabled', 'true');
+            }
+        }
+
+        function acceptTerms() {
+            localStorage.setItem('tassili_go_driver_terms', 'true');
+            const modal = document.getElementById('termsModal');
+            modal.style.opacity = '0';
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function checkAccountStatus() {
+            if (!driverPhone) return;
+
+            try {
+                const querySnapshot = await db.collection('drivers').where("phone", "==", driverPhone).get();
+
+                if (!querySnapshot.empty) {
+                    const docSnap = querySnapshot.docs[0];
+                    const data = docSnap.data();
+
+                    if (data.is_approved === true) {
+                        alert('مبروك! تم توثيق حسابك بنجاح من طرف الإدارة.');
+                        window.location.href = 'driver-home.html';
+                    } else if (data.full_name) {
+                        document.getElementById('formWrapper').style.display = 'none';
+                        document.getElementById('statusMessageContainer').style.display = 'block';
+
+                        if (data.account_status === 'مرفوض') {
+                            document.getElementById('statusBadge').className = 'status-badge status-rejected';
+                            document.getElementById('statusIcon').className = 'fa-solid fa-circle-xmark';
+                            document.getElementById('statusBadgeText').innerText = 'تم رفض طلب التوثيق من طرف الإدارة';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("خطأ في الفحص:", error);
+            }
+        }
+
+        const convertFileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (error) => reject(error);
+            });
+        };
+
+        async function submitDriverData(e) {
+            e.preventDefault();
+            if (!driverPhone) {
+                alert("رقم الهاتف غير متوفر. يرجى إعادة تسجيل الدخول.");
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitDocBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'جاري معالجة المستندات وحفظ البيانات...';
+
+            try {
+                const fullName = document.getElementById('driverFullName').value.trim();
+                const dob = document.getElementById('driverDob').value;
+                
+                const idCardFile = document.getElementById('idCardFile').files[0];
+                const licenseFile = document.getElementById('licenseFile').files[0];
+                const greyCardFile = document.getElementById('greyCardFile').files[0];
+
+                const idCardBase64 = await convertFileToBase64(idCardFile);
+                const licenseBase64 = await convertFileToBase64(licenseFile);
+                const greyCardBase64 = await convertFileToBase64(greyCardFile);
+
+                const driverProfileData = {
+                    phone: driverPhone,
+                    full_name: fullName,
+                    date_of_birth: dob,
+                    wallet_balance: 0,
+                    rating: 5,
+                    documents: {
+                        id_card_url: idCardBase64,
+                        license_url: licenseBase64,
+                        greyCard_url: greyCardBase64
+                    },
+                    account_status: "قيد المعالجة",
+                    is_approved: false,
+                    created_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                const currentUser = auth.currentUser;
+                const docId = currentUser ? currentUser.uid : 'driver_' + Date.now();
+
+                driverProfileData.uid = docId;
+
+                await db.collection('drivers').doc(docId).set(driverProfileData, { merge: true });
+
+                document.getElementById('formWrapper').style.display = 'none';
+                document.getElementById('statusMessageContainer').style.display = 'block';
+
+            } catch (error) {
+                console.error("خطأ الحفظ:", error);
+                alert('فشل حفظ الملفات، تأكد من أن حجم الصور ليس كبيرًا جداً.');
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'إرسال للمصادقة وتوثيق الحساب';
+            }
+        }
+    </script>
+</body>
+</html>

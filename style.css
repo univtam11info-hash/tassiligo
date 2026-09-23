@@ -1,0 +1,307 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+h1,
+h2,
+h3,
+.front h1 {
+    font-family: 'IBM Plex Sans Arabic', sans-serif !important;
+    font-weight: 800;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Cairo', sans-serif;
+}
+
+body {
+    background-color: #ffffff;
+    color: #1e293b;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    direction: rtl;
+}
+
+.front1 {
+    width: 100%;
+    max-width: 600px;
+    min-height: 100vh;
+    background-color: #ffffff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ==========================================
+   الجزء العلوي الموحد (السيارة والدائرة)
+========================================== */
+.front {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.front .logo {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    margin: 0 auto 10px auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: visible;
+}
+
+.front .logo::before {
+    content: '';
+    position: absolute;
+    top: -90px;
+    width: 320px;
+    height: 260px;
+    background-color: #0b131f;
+    border-bottom-left-radius: 160px;
+    border-bottom-right-radius: 160px;
+    z-index: 1;
+}
+
+.front .logo img {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    margin: 35px auto 10px auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: visible;
+    z-index: 2;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
+    transform: rotate(270deg);
+}
+
+.front h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 100px !important;
+    margin-bottom: 8px;
+}
+
+.front p {
+    font-size: 15px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* ==========================================
+   حاوية الروابط والبطاقات
+========================================== */
+.buttons-container {
+    width: 100%;
+    max-width: 380px;
+    margin: 20px auto 40px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    clear: both;
+}
+
+.taxior, .cleant {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    height: 72px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 10px;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    text-decoration: none !important;
+}
+
+.taxior .icon-box, .cleant .icon-box {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    width: 60px;
+    height: 60px;
+    background-color: #10b981;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 22px;
+    z-index: 10;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.taxior .card-text, .cleant .card-text {
+    position: relative;
+    z-index: 1;
+    margin-right: 76px;
+    text-align: right;
+    transition: color 0.3s ease;
+}
+
+.taxior .card-text h3, .cleant .card-text h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+}
+
+.taxior .card-text p, .cleant .card-text p {
+    font-size: 12px;
+    color: #64748b;
+    margin: 0;
+}
+
+.taxior:hover, .cleant:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
+}
+
+.taxior:hover .icon-box, .cleant:hover .icon-box {
+    width: calc(100% - 12px);
+}
+
+.taxior:hover .card-text h3, .cleant:hover .card-text h3,
+.taxior:hover .card-text p, .cleant:hover .card-text p {
+    color: #ffffff;
+}
+
+/* --- تغليف التصميم داخل Modal منبثق --- */
+.otp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* --- تصميم الكارت الرئيسي --- */
+.otp-modal-overlay .form {
+  width: 350px !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 25px 20px !important;
+  border-radius: 20px !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  box-sizing: border-box !important;
+}
+
+.otp-modal-overlay .heading {
+  position: static !important;
+  text-align: center !important;
+  color: #0f172a !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  margin-bottom: 15px !important;
+}
+
+.otp-modal-overlay .check {
+  position: static !important;
+  margin-bottom: 15px !important;
+}
+
+/* --- حقول الإدخال --- */
+.otp-modal-overlay .box {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin-bottom: 20px !important;
+  width: 100% !important;
+}
+
+.otp-modal-overlay .input {
+  position: static !important;
+  width: 40px !important;
+  height: 48px !important;
+  margin: 0 !important;
+  border-radius: 10px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  outline: none !important;
+  background-color: #f8fafc !important;
+  text-align: center !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+  box-shadow: inset 2px 2px 5px #e2e8f0, inset -2px -2px 5px #ffffff !important;
+  transition: all 0.3s ease !important;
+  box-sizing: border-box !important;
+}
+
+.otp-modal-overlay .input:hover,
+.otp-modal-overlay .input:focus {
+  background-color: #ffffff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* --- الأزرار --- */
+.otp-modal-overlay .btn1 {
+  position: static !important;
+  width: 100% !important;
+  height: 44px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  outline: none !important;
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  margin-bottom: 10px !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.otp-modal-overlay .btn1:hover {
+  background-color: #059669 !important;
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+.otp-modal-overlay .btn2 {
+  position: static !important;
+  width: 100% !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  border: 1px solid #cbd5e1 !important;
+  outline: none !important;
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.otp-modal-overlay .btn2:hover {
+  background-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
